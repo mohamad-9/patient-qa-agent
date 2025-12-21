@@ -113,6 +113,15 @@ The project is currently hosted online.
 
 ---
 
+
+## 🔐 Environment Variables
+HUGGINGFACE_API_TOKEN=hf_xxxxxxxxxxxxxxxxx
+MLFLOW_TRACKING_URI=file:/app/mlruns
+MLFLOW_EXPERIMENT_NAME=patient-qa-agent
+
+
+---
+
 ## 📦 Python Dependencies
 
 These are the libraries used in this project:
@@ -128,4 +137,7 @@ httpx==0.27.2
 spacy==3.8.2
 openai==1.57.3
 
-mlflow==3.7.0
+mlflow==3.7.0'''
+
+
+
