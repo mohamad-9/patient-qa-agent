@@ -1,0 +1,7 @@
+.env
+mlruns/
+mlflow.db
+__pycache__/
+*.log
+.DS_Store
+.venv/
