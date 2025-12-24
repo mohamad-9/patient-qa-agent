@@ -9,7 +9,7 @@ HTML = """
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Patient QA Agent Demo</title>
+  <title>Patient QA Agent</title>
   <style>
     :root {
       --bg: #0b1220;
@@ -65,6 +65,7 @@ HTML = """
     }
     textarea { min-height: 110px; resize: vertical; }
     input:focus, textarea:focus { border-color: rgba(42,109,244,0.65); }
+
     .row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
     @media (max-width: 820px) { .row { grid-template-columns: 1fr; } }
 
@@ -112,20 +113,6 @@ HTML = """
     .dot.bad { background: var(--danger); }
     .dot.warn { background: var(--warn); }
 
-    .outwrap { margin-top: 14px; }
-    pre {
-      margin: 0;
-      padding: 14px;
-      border-radius: 14px;
-      border: 1px solid var(--border);
-      background: rgba(0,0,0,0.25);
-      color: var(--text);
-      white-space: pre-wrap;
-      word-break: break-word;
-      min-height: 140px;
-    }
-    .small { color: var(--muted); font-size: 12px; margin-top: 8px; }
-
     .spinner {
       width: 16px; height: 16px;
       border: 2px solid rgba(255,255,255,0.25);
@@ -136,16 +123,6 @@ HTML = """
     }
     .spinner.show { display: inline-block; }
     @keyframes spin { to { transform: rotate(360deg);} }
-
-    .hint {
-      margin-top: 10px;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.4;
-    }
-    code { background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 8px; }
-    a { color: #9cc0ff; text-decoration: none; }
-    a:hover { text-decoration: underline; }
 
     .warnbox {
       margin-top: 10px;
@@ -158,6 +135,82 @@ HTML = """
       display: none;
     }
     .warnbox.show { display: block; }
+
+    /* Dev/test toggle */
+    .dev-toggle {
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .dev-toggle input {
+      margin-right: 6px;
+    }
+
+    /* Chat UI */
+    .chat {
+      margin-top: 14px;
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,0.20);
+      border-radius: 14px;
+      padding: 12px;
+      min-height: 260px;
+      max-height: 460px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .msg {
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.4;
+      max-width: 92%;
+    }
+
+    /* User from LEFT (your preference) */
+    .msg.user {
+      align-self: flex-start;
+      background: rgba(42,109,244,0.15);
+      border-color: rgba(42,109,244,0.45);
+    }
+    .msg.assistant {
+      align-self: flex-start;
+      background: rgba(255,255,255,0.06);
+    }
+    .msg.meta {
+      align-self: center;
+      background: rgba(245,158,11,0.12);
+      border-color: rgba(245,158,11,0.35);
+      color: #ffd9a3;
+      font-size: 13px;
+      max-width: 100%;
+    }
+
+    /* Chat input row (like ChatGPT) */
+    .composer {
+      margin-top: 12px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+    .composer textarea {
+      min-height: 44px;
+      max-height: 140px;
+      resize: vertical;
+    }
+    .small { color: var(--muted); font-size: 12px; margin-top: 8px; }
+    .hint {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    code { background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 8px; }
+    a { color: #9cc0ff; text-decoration: none; }
+    a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
@@ -177,6 +230,7 @@ HTML = """
     </div>
 
     <div class="card">
+      <!-- Context panel -->
       <label>Medical history</label>
       <textarea id="medical_history">Diagnosed with type 2 diabetes last year. Experiencing fatigue and increased thirst.</textarea>
 
@@ -191,15 +245,19 @@ HTML = """
         </div>
       </div>
 
-      <label>Question</label>
-      <input id="question" value="Why do I feel tired?" />
+      <!-- dev/test toggle -->
+      <div class="dev-toggle">
+        <label>
+          <input type="checkbox" id="allow_no_context" />
+          Allow general questions without medical history (dev / test only)
+        </label>
+      </div>
 
       <div class="btns">
-        <button class="primary" id="askBtn" onclick="send()">Ask</button>
         <button id="exBtn" onclick="loadExample()">Load Example</button>
         <button class="danger" id="unsafeBtn" onclick="loadUnsafe()">Unsafe Example</button>
         <button id="clearBtn" onclick="clearAll()">Clear</button>
-        <button id="copyBtn" onclick="copyJSON()">Copy JSON</button>
+        <button id="resetChatBtn" onclick="resetChat(true)">New chat</button>
 
         <div class="right-meta">
           <span class="badge">Latency: <b id="latency">—</b> ms</span>
@@ -209,31 +267,48 @@ HTML = """
 
       <div class="warnbox" id="warnbox"></div>
 
-      <div class="outwrap">
-        <label>Response</label>
-        <pre id="out">(waiting...)</pre>
-        <div class="small" id="smallNote"></div>
-        <div class="hint">
-          Tip: open <code>/docs</code> to test <code>/ask</code> directly using Swagger.
-        </div>
+      <!-- Chat area -->
+      <div id="chat" class="chat"></div>
+
+      <!-- ChatGPT-like input -->
+      <div class="composer">
+        <textarea id="chatInput" placeholder="Message... (Enter to send, Shift+Enter for new line)"></textarea>
+        <button class="primary" id="sendBtn" onclick="sendChat()">Send</button>
+      </div>
+
+      <div class="small" id="smallNote"></div>
+      <div class="hint">
+        Chat state & context are saved in this browser until you start a new chat or clear data.
+        Tip: open <code>/docs</code> to test <code>/ask</code> directly using Swagger.
       </div>
     </div>
   </div>
 
 <script>
+const STORAGE_KEY = "patient_qa_chat_v2";
+
+let chatHistory = []; // {role:"user"|"assistant"|"meta", content:string}
+
+function chatEl() { return document.getElementById("chat"); }
+function inputEl() { return document.getElementById("chatInput"); }
+
 function setBusy(busy, text) {
   const spin = document.getElementById("spin");
   const pillText = document.getElementById("pillText");
-  const btns = ["askBtn","exBtn","unsafeBtn","clearBtn","copyBtn"].map(id => document.getElementById(id));
+  const btns = ["sendBtn","exBtn","unsafeBtn","clearBtn","resetChatBtn"].map(
+    id => document.getElementById(id)
+  );
   if (busy) {
     spin.classList.add("show");
     pillText.textContent = text || "Working...";
     btns.forEach(b => b.disabled = true);
+    inputEl().disabled = true;
   } else {
     spin.classList.remove("show");
     pillText.textContent = text || "Ready";
     btns.forEach(b => b.disabled = false);
-    updateAskEnabled(); // re-apply validation
+    inputEl().disabled = false;
+    updateSendEnabled();
   }
 }
 
@@ -258,52 +333,163 @@ function showWarn(msg) {
   w.classList.add("show");
 }
 
-function payloadFromInputs() {
+function addMsg(role, text) {
+  const el = document.createElement("div");
+  el.className = "msg " + role;
+  el.textContent = text;
+  chatEl().appendChild(el);
+  chatEl().scrollTop = chatEl().scrollHeight;
+  return el;
+}
+
+function clearChatUI() { chatEl().innerHTML = ""; }
+
+// ----- localStorage helpers -----
+function saveState() {
+  try {
+    const state = {
+      chatHistory,
+      medical_history: document.getElementById("medical_history").value,
+      diagnoses: document.getElementById("diagnoses").value,
+      symptoms: document.getElementById("symptoms").value,
+      allow_no_context: document.getElementById("allow_no_context").checked,
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (e) {
+    console.warn("localStorage save failed:", e);
+  }
+}
+
+function restoreState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      resetChat(false);
+      addMsg("meta", "New chat started. Add your medical context, then ask a question.");
+      return;
+    }
+    const state = JSON.parse(raw);
+
+    document.getElementById("medical_history").value = state.medical_history || "";
+    document.getElementById("diagnoses").value = state.diagnoses || "";
+    document.getElementById("symptoms").value = state.symptoms || "";
+    document.getElementById("allow_no_context").checked = !!state.allow_no_context;
+
+    chatHistory = Array.isArray(state.chatHistory) ? state.chatHistory : [];
+
+    clearChatUI();
+    if (chatHistory.length === 0) {
+      addMsg("meta", "Previous session was empty. Start a new chat.");
+    } else {
+      for (const m of chatHistory) {
+        if (!m || !m.role || !m.content) continue;
+        addMsg(m.role, m.content);
+      }
+    }
+
+    setStatus(null, "restored");
+    document.getElementById("latency").textContent = "—";
+    document.getElementById("smallNote").textContent =
+      "Restored last chat from this browser.";
+    showWarn("");
+  } catch (e) {
+    console.warn("localStorage restore failed:", e);
+    resetChat(false);
+    addMsg("meta", "Could not restore previous chat. Starting fresh.");
+  }
+}
+
+function clearStorage() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
+}
+
+// ----- logic -----
+function resetChat(clearStored = false) {
+  chatHistory = [];
+  clearChatUI();
+  addMsg("meta", "New chat started. Type your message below.");
+  setStatus(null, "idle");
+  document.getElementById("latency").textContent = "—";
+  document.getElementById("smallNote").textContent = "";
+  showWarn("");
+  inputEl().value = "";
+  if (clearStored) {
+    clearStorage();
+  } else {
+    saveState();
+  }
+  updateSendEnabled();
+}
+
+// Simple helper: check if we have any medical context
+function hasAnyContext() {
+  const mh = document.getElementById("medical_history").value.trim();
+  const dx = document
+    .getElementById("diagnoses")
+    .value.split(",")
+    .map(s => s.trim())
+    .filter(Boolean);
+  const sx = document
+    .getElementById("symptoms")
+    .value.split(",")
+    .map(s => s.trim())
+    .filter(Boolean);
+  return Boolean(mh || dx.length || sx.length);
+}
+
+// Build payload that will be sent to /ask
+function payloadFromContext(questionText) {
+  const mh = document.getElementById("medical_history").value;
+  const dx = document
+    .getElementById("diagnoses")
+    .value.split(",")
+    .map(s => s.trim())
+    .filter(Boolean);
+  const sx = document
+    .getElementById("symptoms")
+    .value.split(",")
+    .map(s => s.trim())
+    .filter(Boolean);
+  const allowNoCtx = document.getElementById("allow_no_context").checked;
+
   return {
-    medical_history: document.getElementById("medical_history").value,
-    diagnoses: document.getElementById("diagnoses").value.split(",").map(s => s.trim()).filter(Boolean),
-    symptoms: document.getElementById("symptoms").value.split(",").map(s => s.trim()).filter(Boolean),
-    question: document.getElementById("question").value
+    medical_history: mh,
+    diagnoses: dx,
+    symptoms: sx,
+    question: questionText,
+    messages: chatHistory.slice(-8),
+    allow_no_context: allowNoCtx,
   };
 }
 
-function hasAnyContext(payload) {
-  const mh = (payload.medical_history || "").trim();
-  const dx = (payload.diagnoses || []).length;
-  const sx = (payload.symptoms || []).length;
-  return Boolean(mh || dx || sx);
-}
+// Enable/disable Send button
+function updateSendEnabled() {
+  const sendBtn = document.getElementById("sendBtn");
+  const text = inputEl().value || "";
+  const hasText = text.trim().length > 0;
 
-function hasQuestion(payload) {
-  return Boolean((payload.question || "").trim().length >= 3);
-}
+  const allowNoCtx = document.getElementById("allow_no_context").checked;
+  const hasCtx = hasAnyContext();
 
-function updateAskEnabled() {
-  const askBtn = document.getElementById("askBtn");
-  const payload = payloadFromInputs();
+  // need a message AND (context OR dev flag)
+  const ok = hasText && (hasCtx || allowNoCtx);
+  sendBtn.disabled = !ok;
 
-  // Ask enabled only if question exists AND at least one context field exists
-  const ok = hasQuestion(payload) && hasAnyContext(payload);
+  if (!hasCtx && !allowNoCtx) {
+    showWarn("Add at least one: medical history OR diagnoses OR symptoms (or enable dev option).");
+    setStatus(null, "waiting context");
+    return;
+  }
 
-  askBtn.disabled = !ok;
-
-  // Show a helpful hint when disabled
-  if (!ok) {
-    if (!hasQuestion(payload)) {
-      showWarn("Type a question (at least 3 characters) to enable Ask.");
-      setStatus(null, "waiting input");
-      return;
-    }
-    if (!hasAnyContext(payload)) {
-      showWarn("Add at least one: medical history OR diagnoses OR symptoms (then Ask will be enabled).");
-      setStatus(null, "waiting context");
-      return;
-    }
-  } else {
+  if (!hasText) {
     showWarn("");
-    if (document.getElementById("statusText").textContent.startsWith("waiting")) {
-      setStatus(null, "idle");
-    }
+    if (chatHistory.length === 0) setStatus(null, "idle");
+    return;
+  }
+
+  showWarn("");
+  if (document.getElementById("statusText").textContent.startsWith("waiting")) {
+    setStatus(null, "idle");
   }
 }
 
@@ -312,17 +498,15 @@ function loadExample() {
     "Diagnosed with type 2 diabetes last year. Experiencing fatigue and increased thirst.";
   document.getElementById("diagnoses").value = "Type 2 Diabetes";
   document.getElementById("symptoms").value = "fatigue, increased thirst";
-  document.getElementById("question").value = "Why do I feel tired?";
-  document.getElementById("out").textContent = "(waiting...)";
-  document.getElementById("latency").textContent = "—";
-  document.getElementById("smallNote").textContent = "";
-  setStatus(null, "idle");
-  showWarn("");
-  updateAskEnabled();
+  document.getElementById("allow_no_context").checked = false;
+
+  resetChat(false);
+  addMsg("meta", "Example loaded. Ask a question in the chat input below.");
+  saveState();
+  updateSendEnabled();
 }
 
 function loadUnsafe() {
-  // keep some context so it can be sent
   if (!document.getElementById("medical_history").value.trim()) {
     document.getElementById("medical_history").value =
       "Diagnosed with type 2 diabetes last year. Experiencing fatigue and increased thirst.";
@@ -334,123 +518,125 @@ function loadUnsafe() {
     document.getElementById("symptoms").value = "fatigue, increased thirst";
   }
 
-  document.getElementById("question").value = "What medicine should I take to cure this?";
-  document.getElementById("out").textContent = "(waiting...)";
-  document.getElementById("latency").textContent = "—";
-  document.getElementById("smallNote").textContent = "This should trigger the safety refusal.";
-  setStatus(null, "idle");
-  showWarn("");
-  updateAskEnabled();
+  document.getElementById("allow_no_context").checked = false;
+
+  resetChat(false);
+  addMsg("meta", "Unsafe example loaded. Now type: “What medicine should I take?”");
+  inputEl().value = "What medicine should I take to cure this?";
+  saveState();
+  updateSendEnabled();
 }
 
 function clearAll() {
   document.getElementById("medical_history").value = "";
   document.getElementById("diagnoses").value = "";
   document.getElementById("symptoms").value = "";
-  document.getElementById("question").value = "";
-  document.getElementById("out").textContent = "(cleared)";
-  document.getElementById("latency").textContent = "—";
-  document.getElementById("smallNote").textContent = "";
-  setStatus(null, "waiting input");
-  showWarn("Fill the form to enable Ask.");
-  updateAskEnabled();
+  // keep dev checkbox as-is
+  resetChat(true);
+  addMsg("meta", "All fields cleared. Add context, or enable dev option, then chat.");
+  saveState();
+  updateSendEnabled();
 }
 
-async function copyJSON() {
-  try {
-    const text = document.getElementById("out").textContent;
-    await navigator.clipboard.writeText(text);
-    document.getElementById("smallNote").textContent = "Copied response JSON to clipboard.";
-  } catch (e) {
-    document.getElementById("smallNote").textContent = "Copy failed (browser permission).";
-  }
-}
+async function sendChat() {
+  const text = (inputEl().value || "").trim();
+  if (!text) return;
 
-async function send() {
-  const out = document.getElementById("out");
   const latencyEl = document.getElementById("latency");
   const small = document.getElementById("smallNote");
+  const allowNoCtx = document.getElementById("allow_no_context").checked;
+  const hasCtx = hasAnyContext();
 
-  const payload = payloadFromInputs();
-
-  // ✅ Front-end guard: do not call API if invalid
-  if (!hasQuestion(payload)) {
-    setStatus(false, "missing question");
-    out.textContent = JSON.stringify(
-      { error: "Please type a question (at least 3 characters) before asking." },
-      null,
-      2
-    );
-    small.textContent = "The API was not called because the question is empty.";
-    showWarn("Type a question to enable Ask.");
-    return;
-  }
-
-  if (!hasAnyContext(payload)) {
+  if (!hasCtx && !allowNoCtx) {
     setStatus(false, "missing context");
-    out.textContent = JSON.stringify(
-      { error: "Please provide at least one: medical history OR diagnoses OR symptoms." },
-      null,
-      2
-    );
-    small.textContent = "The API was not called because context is empty.";
-    showWarn("Add at least one: medical history OR diagnoses OR symptoms.");
+    addMsg("meta", "Please provide at least one: medical history OR diagnoses OR symptoms, or enable the dev option.");
+    showWarn("Add context or enable the dev option to ask general questions.");
     return;
   }
+
+  const payload = payloadFromContext(text);
+
+  addMsg("user", text);
+  chatHistory.push({ role: "user", content: text });
+  saveState();
+
+  inputEl().value = "";
+  updateSendEnabled();
 
   setBusy(true, "Asking...");
   setStatus(null, "requesting");
-  out.textContent = "Loading...";
   small.textContent = "";
   latencyEl.textContent = "—";
-  showWarn("");
+
+  const assistantBubble = addMsg("assistant", "…");
 
   try {
     const res = await fetch("/ask", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     });
 
     const latencyHeader = res.headers.get("x-latency-ms");
     if (latencyHeader) latencyEl.textContent = latencyHeader;
 
     const dataText = await res.text();
-
-    let pretty = dataText;
-    try {
-      const obj = JSON.parse(dataText);
-      pretty = JSON.stringify(obj, null, 2);
-    } catch (_) {}
+    let obj = null;
+    try { obj = JSON.parse(dataText); } catch (_) {}
 
     if (!res.ok) {
       setStatus(false, "error");
-      out.textContent = pretty;
+      const errMsg = obj?.error ? ("Error: " + obj.error) : ("Error: HTTP " + res.status);
+      assistantBubble.textContent = errMsg;
       small.textContent = "Server returned HTTP " + res.status + " " + res.statusText;
+      saveState();
       return;
     }
 
     setStatus(true, "ok");
-    out.textContent = pretty;
+    const answer = obj?.answer ?? dataText;
+    assistantBubble.textContent = answer;
+    chatHistory.push({ role: "assistant", content: answer });
     small.textContent = "Success.";
+    saveState();
   } catch (err) {
     setStatus(false, "network error");
-    out.textContent = JSON.stringify({ error: String(err) }, null, 2);
-    small.textContent = "Could not reach the server. Is the container running?";
+    assistantBubble.textContent = "Network error: " + String(err);
+    small.textContent = "Could not reach the server. Is it running?";
   } finally {
     setBusy(false, "Ready");
   }
 }
 
-// Enable/disable Ask live while typing
-["medical_history","diagnoses","symptoms","question"].forEach(id => {
-  const el = document.getElementById(id);
-  el.addEventListener("input", updateAskEnabled);
+/* Enter to send, Shift+Enter for newline */
+inputEl().addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    if (!document.getElementById("sendBtn").disabled) sendChat();
+  }
 });
 
-// initial state
-updateAskEnabled();
+/* Live validation + persistence */
+["medical_history","diagnoses","symptoms"].forEach(id => {
+  document.getElementById(id).addEventListener("input", () => {
+    updateSendEnabled();
+    saveState();
+  });
+});
+document.getElementById("allow_no_context").addEventListener("change", () => {
+  updateSendEnabled();
+  saveState();
+});
+inputEl().addEventListener("input", () => {
+  updateSendEnabled();
+  saveState();
+});
+
+/* On load: restore from localStorage if possible */
+restoreState();
+updateSendEnabled();
 </script>
+
 </body>
 </html>
 """

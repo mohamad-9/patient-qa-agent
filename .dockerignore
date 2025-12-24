@@ -1,13 +1,32 @@
-.venv
-__pycache__
-*.pyc
+
+# Python
+__pycache__/
+*.py[cod]
 *.pyo
 *.pyd
+
+# Virtual env
+.venv/
+venv/
+
+# Environment & secrets
+.env
+.env.*
+*.env
+
+# Git
+.git/
+.gitignore
+
+# OS / editor junk
 .mypy_cache
 .pytest_cache
 .DS_Store
+.vscode/
+.idea/
 
-.env
-mlruns
-mlflow.db
-.git
+# Local MLflow runs (not needed in build context)
+mlruns/
+
+# Logs
+*.log

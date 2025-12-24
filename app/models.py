@@ -1,4 +1,3 @@
-# app/models.py
 import os
 import re
 from dotenv import load_dotenv
@@ -19,17 +18,18 @@ client = OpenAI(
     api_key=HF_TOKEN,
 )
 
-# Model from your /v1/models output
+# Model id (from your HF router)
 MODEL_ID = "ServiceNow-AI/Apriel-1.6-15b-Thinker"
 
 DISCLAIMER = "This is for educational purposes only and not medical advice."
 
-# If everything fails, we still return a safe educational answer (no directives).
+# Generic, safe fallback answer (no directives, no specifics)
 FALLBACK = (
-    "Fatigue can happen when the body’s energy use is affected by several factors. "
-    "With conditions that influence blood sugar regulation, cells may have difficulty accessing fuel efficiently even when glucose is present. "
-    "Fluid shifts and dehydration can also contribute to low energy. "
-    "Sleep disruption, stress responses, and other medical conditions can add to tiredness. "
+    "Some medical conditions can influence how the body regulates fluids, energy use, "
+    "and circulation, which may contribute to symptoms such as fatigue, increased thirst, "
+    "or headaches in a general way. These effects can relate to how the body manages glucose, "
+    "hormones, and hydration levels. Healthcare professionals consider the full clinical "
+    "picture when interpreting symptoms like these. "
     + DISCLAIMER
 )
 
@@ -67,7 +67,7 @@ ADVICE_MARKERS = [
     "cut down",
     "reduce ",
     "increase ",
-    "talk to your doctor",  # we handle referrals more carefully later
+    "talk to your doctor",
 ]
 
 
@@ -126,7 +126,7 @@ def _clean_to_final_answer(text: str) -> str:
 
 def _call_chat(messages, max_tokens=220, temperature=0.0) -> str:
     """
-    temperature=0.0 => more stable, less random, fewer weird outputs
+    Thin wrapper around OpenAI-compatible chat completion API.
     """
     resp = client.chat.completions.create(
         model=MODEL_ID,
@@ -137,13 +137,16 @@ def _call_chat(messages, max_tokens=220, temperature=0.0) -> str:
     return (resp.choices[0].message.content or "").strip()
 
 
+# -------------------------------------------------------------------
+# Public API: query_huggingface(prompt)
+# -------------------------------------------------------------------
 def query_huggingface(prompt: str) -> str:
     """
     3-pass defense:
     - Pass 1: generate educational-only answer (no reasoning)
     - Pass 2: if reasoning leaks, rewrite as final answer only
     - Pass 3: if advice/directives appear, rewrite to remove ALL advice
-    - Fallback: safe educational paragraph if output is broken
+    - Final: sanitize and fallback if any instructions leak
     """
     try:
         # -----------------------
@@ -200,8 +203,10 @@ def query_huggingface(prompt: str) -> str:
                 {
                     "role": "user",
                     "content": (
-                        f"Original prompt:\n{prompt}\n\n"
-                        f"Bad response:\n{answer_1}\n\n"
+                        "Original prompt:\n"
+                        f"{prompt}\n\n"
+                        "Bad response:\n"
+                        f"{answer_1}\n\n"
                         "Now rewrite as final answer only."
                     ),
                 },
@@ -237,8 +242,10 @@ def query_huggingface(prompt: str) -> str:
                 {
                     "role": "user",
                     "content": (
-                        f"Original prompt:\n{prompt}\n\n"
-                        f"Response that contains advice/reasoning:\n{answer_2}\n\n"
+                        "Original prompt:\n"
+                        f"{prompt}\n\n"
+                        "Response that contains advice/reasoning:\n"
+                        f"{answer_2}\n\n"
                         "Now rewrite with NO advice and no reasoning."
                     ),
                 },
@@ -249,6 +256,24 @@ def query_huggingface(prompt: str) -> str:
 
         final_text = _clean_to_final_answer(answer_3)
 
+        # -------------------------------------------------
+        # Final safety cleanup: NEVER leak instructions
+        # -------------------------------------------------
+        forbidden_fragments = [
+            "Rewrite to remove ALL advice",
+            "Rewrite into a clean final answer",
+            "OUTPUT RULES",
+            "Chain-of-thought",
+            "Chain of thought",
+            "Reasoning:",
+            "Now rewrite",
+            "as the last sentence",
+        ]
+
+        lowered = final_text.lower()
+        if any(fragment.lower() in lowered for fragment in forbidden_fragments):
+            return FALLBACK
+
         # If it is still broken, use safe fallback
         if _is_disclaimer_only(final_text) or _has_reasoning(final_text):
             return FALLBACK
@@ -256,4 +281,40 @@ def query_huggingface(prompt: str) -> str:
         return final_text
 
     except Exception as e:
+        # For debugging you might prefer to return the error;
+        # if you want to hide errors from end users, change this to `return FALLBACK`.
         return f"Hugging Face API client error: {repr(e)}"
+
+
+# -------------------------------------------------------------------
+# Optional compatibility wrapper: query_huggingface_chat
+# -------------------------------------------------------------------
+def query_huggingface_chat(user_messages: list[dict]) -> str:
+    """
+    Compatibility helper if you ever want to call the model using a list
+    of chat-style messages instead of a single prompt string.
+
+    user_messages example:
+    [
+      {"role": "user", "content": "Why do I feel tired?"},
+      {"role": "assistant", "content": "..." },
+      ...
+    ]
+
+    We convert them into a text prompt and delegate to query_huggingface().
+    """
+    lines = []
+    for m in user_messages or []:
+        role = m.get("role", "user")
+        content = (m.get("content") or "").strip()
+        if not content:
+            continue
+        label = "Patient" if role == "user" else "Assistant"
+        lines.append(f"{label}: {content}")
+
+    if not lines:
+        # If nothing useful, just pass an empty prompt
+        return query_huggingface("")
+
+    prompt = "\n".join(lines)
+    return query_huggingface(prompt)
