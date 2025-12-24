@@ -1,7 +1,28 @@
-.env
-mlruns/
-mlflow.db
+# Python
 __pycache__/
-*.log
-.DS_Store
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual env
 .venv/
+venv/
+
+# Environment & secrets
+.env
+.env.*
+*.env
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+
+# Git
+.git/
+
+# MLflow local runs
+mlruns/
+
+# Logs
+*.log
