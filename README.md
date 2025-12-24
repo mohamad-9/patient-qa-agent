@@ -1,143 +1,193 @@
 # 🩺 Patient Medical History Q&A Assistant (Non-Clinical)
 
+A **health-safe, educational AI assistant** that explains medical topics **without providing diagnosis, treatment, or personal medical advice**.
+
+This project demonstrates how to design **responsible AI systems** that handle **sensitive healthcare topics safely** — with **multi-turn chat**, **strict refusal rules**, and **privacy-aware logging**.
+
+> ⚠️ This system is **NOT a medical device** and **NOT a substitute for professional medical advice**.
 
 ---
 
-## 📌 Project Overview
+## 🆕 Current Version
 
-This project is a **non-clinical, healthcare-safe AI assistant**.
+### ✅ v0.2 — Chat Assistant Release
 
-It allows users to ask **educational questions** related to their **own medical history, diagnoses, and symptoms**, and receive **simple explanations** — without giving medical advice.
-
-⚠️ This system is **NOT a medical tool** and **NOT a diagnostic system**.
-
----
-
-## 🎯 Purpose of the Project
-
-I built this project to learn:
-
-- How to design **safe AI systems**
-- How to prevent **medical advice or diagnosis**
-- How to build APIs using **FastAPI**
-- How to deploy AI apps using **Docker + cloud hosting**
-- How to log AI usage **without storing sensitive data**
-
-This is an **initial version**.  
-In future updates, I plan to convert it into a **chat-style application**.
+✔ Chat-style conversation UI  
+✔ Conversation context preserved  
+✔ Strong safety guardrails  
+✔ Hugging Face Router API  
+✔ MLflow metadata logging (no PHI stored)  
+✔ Docker-ready & deployable  
+✔ Dev-mode toggle for testing
 
 ---
 
-## ✅ What the Assistant Can Do
+## 🎯 Project Goals
 
-- Explain **medical terms** in simple language
-- Explain **doctor-provided diagnoses**
-- Explain general relationships between **conditions and symptoms**
-- Answer **educational questions only**
-- Show how to build AI systems with **safety guardrails**
+Built to learn:
+
+- Safe AI Assistant design
+- Preventing unsafe medical outputs
+- FastAPI backend architecture
+- NLP context extraction
+- Docker deployment
+- Cloud hosting practices
+- Privacy-first logging approach
+
+---
+
+## 💬 What the Assistant CAN Do
+
+✔ Explain doctor-provided diagnoses  
+✔ Explain medical terms  
+✔ Describe general health mechanisms  
+✔ Provide educational answers  
+✔ Maintain conversation context  
+✔ Refuse unsafe requests politely  
 
 ---
 
 ## 🚫 What the Assistant Will NOT Do
 
-The system will refuse to:
+❌ Diagnose  
+❌ Recommend medications  
+❌ Suggest treatments  
+❌ Give personal health advice  
+❌ Replace a doctor  
 
-- ❌ Diagnose diseases
-- ❌ Recommend medications
-- ❌ Suggest treatments
-- ❌ Give personal medical advice
-- ❌ Replace a healthcare professional
-
-If a question is unsafe, the system responds with a **polite refusal**.
+Unsafe questions trigger a refusal response.
 
 ---
 
-## 🧠 Safety Design (Important)
+## 🧠 Safety Architecture
 
-Safety is enforced at **multiple levels**:
+### 🔹 Frontend
+Input validation + chat guardrails
 
-1. **Frontend guard**
-   - The user must enter a valid question
-2. **Backend guard**
-   - The API rejects empty or invalid requests
-3. **Safety classifier**
-   - Blocks treatment / diagnosis questions
-4. **Prompt constraints**
-   - Educational explanations only
-5. **Logging safety**
-   - MLflow logs metadata only (no medical text)
+### 🔹 Backend
+Validation + structured schema checks
 
----
+### 🔹 Safety Classifier
+Blocks:
+- Treatment advice
+- Diagnosis questions
+- Medication guidance
+- Urgent care advice
 
-## 🧪 Current Version
+### 🔹 Prompt Rules
+- Educational only
+- No reasoning exposed
+- Disclaimer always added
 
-### Version: `v0.1 (Initial Release)`
+### 🔹 Privacy Logging
+MLflow stores ONLY:
+- latency
+- counts
+- flags
+- model id
 
-Current features:
-- REST API
-- Demo web UI
-- Single-question flow
-- Educational explanations
-- Dockerized deployment
-
-Planned updates:
-- Chat interface
-- Conversation history
-- UI improvements
-- More robust NLP extraction
+❌ No medical text stored  
+❌ No PHI stored
 
 ---
 
-## 🌐 Live Deployment
+## 🌐 Live Example (if deployed)
 
-The project is currently hosted online.
+Demo UI:
+```
+https://your-service-url/demo
+```
 
-- **Demo UI**  
-  https://patient-qa-agent.onrender.com/demo
-
-- **API Documentation (Swagger)**  
-  https://patient-qa-agent.onrender.com/docs
-
----
-
-## 🛠️ Tech Stack
-
-- **Python 3.11**
-- **FastAPI** – backend framework
-- **Uvicorn** – ASGI server
-- **spaCy** – NLP extraction
-- **Hugging Face Inference API**
-- **MLflow** – experiment logging (no PHI)
-- **Docker**
-- **Render** – cloud hosting
+API Docs (Swagger):
+```
+https://your-service-url/docs
+```
 
 ---
 
+## 🛠 Tech Stack
+
+| Layer | Tool |
+|------|-----|
+| Backend | FastAPI |
+| Server | Uvicorn |
+| Model | Hugging Face Router |
+| NLP | spaCy |
+| Logging | MLflow |
+| Runtime | Python 3.11 |
+| Container | Docker |
+| Hosting | Render |
+
+---
 
 ## 🔐 Environment Variables
-HUGGINGFACE_API_TOKEN=hf_xxxxxxxxxxxxxxxxx
+
+Create `.env`
+
+```
+HUGGINGFACE_API_TOKEN=hf_xxxxxxxxx
 MLFLOW_TRACKING_URI=file:/app/mlruns
 MLFLOW_EXPERIMENT_NAME=patient-qa-agent
-
+```
 
 ---
 
-## 📦 Python Dependencies
+## ▶️ Run Local
 
-These are the libraries used in this project:
+```
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
 
-```txt
-fastapi==0.115.5
-uvicorn[standard]==0.32.0
-pydantic==2.10.2
-python-dotenv==1.0.1
-requests==2.32.3
-httpx==0.27.2
+Open:
 
-spacy==3.8.2
-openai==1.57.3
+```
+http://127.0.0.1:8000/demo
+```
 
-mlflow==3.7.0'''
+---
 
+## 🐳 Docker
 
+```
+docker build -t patient-qa-agent .
+docker run -p 8000:8000 --env-file .env patient-qa-agent
+```
 
+---
+
+## 📡 API Example
+
+POST `/ask`
+
+```json
+{
+  "medical_history": "Diagnosed with type 2 diabetes last year.",
+  "diagnoses": ["Type 2 Diabetes"],
+  "symptoms": ["fatigue", "increased thirst"],
+  "question": "Why do I feel tired?",
+  "messages": []
+}
+```
+
+Response includes disclaimer.
+
+---
+
+## 📘 Disclaimer
+
+> This is for educational purposes only and not medical advice.
+
+---
+
+## 🔮 Future Work
+
+- Conversation history persistence
+- Sidebar chat list
+- Better UI polish
+- Extended NLP
+
+---
+
+## 📜 License
+Educational & learning use only.

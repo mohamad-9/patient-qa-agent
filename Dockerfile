@@ -7,7 +7,7 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# ---- System deps (needed for some Python wheels / spacy) ----
+# ---- System deps ----
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
@@ -26,8 +26,9 @@ COPY . .
 ENV MLFLOW_TRACKING_URI=file:/app/mlruns
 ENV MLFLOW_EXPERIMENT_NAME=patient-qa-agent
 
-# ---- Expose & run ----
+# ---- Expose (local dev info only) ----
 EXPOSE 8000
 
-# NOTE: HUGGINGFACE_API_TOKEN will be passed at runtime with -e
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# ---- Start command ----
+# Use PORT from env if present (Render), otherwise 8000 (local)
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
