@@ -113,16 +113,21 @@ MLflow stores **only metadata** — never medical text.
 
 ---
 
-## 🌐 Live Deployment (Render)
+## 🌐 Live Deployment
 
-### Demo UI
-https://patient-qa-agent-1.onrender.com/demo
+The project is currently hosted online.
 
-### API Docs (Swagger)
-https://patient-qa-agent-1.onrender.com/docs
+- **Demo UI**  
+  https://patient-qa-agent-1.onrender.com/demo
 
-### Health Check
-https://patient-qa-agent-1.onrender.com/health
+- **API Documentation (Swagger)**  
+  https://patient-qa-agent-1.onrender.com/docs
+
+ - ** Health Check
+   https://patient-qa-agent-1.onrender.com/health
+
+ - **Auto-deploy:** Enabled on Render (deploys automatically on each git push to the    connected branch).
+
 
 ---
 
