@@ -1,193 +1,269 @@
 # 🩺 Patient Medical History Q&A Assistant (Non-Clinical)
 
-A **health-safe, educational AI assistant** that explains medical topics **without providing diagnosis, treatment, or personal medical advice**.
+---
 
-This project demonstrates how to design **responsible AI systems** that handle **sensitive healthcare topics safely** — with **multi-turn chat**, **strict refusal rules**, and **privacy-aware logging**.
+## 📌 Project Overview
 
-> ⚠️ This system is **NOT a medical device** and **NOT a substitute for professional medical advice**.
+This project is a **non-clinical, healthcare-safe AI assistant**.
+
+It allows users to ask **educational questions** related to their **own medical history, diagnoses, and symptoms**, and receive **simple explanations — without medical advice.**
+
+⚠️ This system is **NOT a medical tool** and  
+⚠️ **NOT a diagnostic system**
+
+It is strictly for **learning + experimentation**.
 
 ---
 
-## 🆕 Current Version
+## 🎯 Purpose of the Project
 
-### ✅ v0.2 — Chat Assistant Release
+I built this project to learn:
 
-✔ Chat-style conversation UI  
-✔ Conversation context preserved  
-✔ Strong safety guardrails  
-✔ Hugging Face Router API  
-✔ MLflow metadata logging (no PHI stored)  
-✔ Docker-ready & deployable  
-✔ Dev-mode toggle for testing
+✅ AI safety design  
+✅ Medical-domain prompt control  
+✅ FastAPI backend architecture  
+✅ Docker deployment workflows  
+✅ Cloud hosting  
+✅ Safe logging with MLflow  
 
----
-
-## 🎯 Project Goals
-
-Built to learn:
-
-- Safe AI Assistant design
-- Preventing unsafe medical outputs
-- FastAPI backend architecture
-- NLP context extraction
-- Docker deployment
-- Cloud hosting practices
-- Privacy-first logging approach
+This version supports **chat-style conversation with context memory.**
 
 ---
 
-## 💬 What the Assistant CAN Do
+## ✅ What the Assistant Can Do
 
-✔ Explain doctor-provided diagnoses  
-✔ Explain medical terms  
-✔ Describe general health mechanisms  
-✔ Provide educational answers  
-✔ Maintain conversation context  
-✔ Refuse unsafe requests politely  
+✔ Explain **doctor-provided diagnoses**  
+✔ Explain **medical terminology**  
+✔ Explain **general mechanisms & symptoms**  
+✔ Stay **educational & neutral**  
+✔ Respect **healthcare AI safety boundaries**
 
 ---
 
 ## 🚫 What the Assistant Will NOT Do
 
-❌ Diagnose  
+The system will refuse to:
+
+❌ Diagnose diseases  
 ❌ Recommend medications  
 ❌ Suggest treatments  
-❌ Give personal health advice  
+❌ Provide medical instructions  
 ❌ Replace a doctor  
 
-Unsafe questions trigger a refusal response.
+If a question is unsafe → it responds with a **polite refusal**.
 
 ---
 
-## 🧠 Safety Architecture
+## 🧠 Safety Design (Layered)
 
-### 🔹 Frontend
-Input validation + chat guardrails
+Safety is enforced at multiple levels:
 
-### 🔹 Backend
-Validation + structured schema checks
+### 1️⃣ Frontend UI Guard
+Users must provide either:
 
-### 🔹 Safety Classifier
-Blocks:
-- Treatment advice
-- Diagnosis questions
-- Medication guidance
-- Urgent care advice
+• medical history  
+• diagnoses  
+• symptoms  
 
-### 🔹 Prompt Rules
-- Educational only
-- No reasoning exposed
-- Disclaimer always added
-
-### 🔹 Privacy Logging
-MLflow stores ONLY:
-- latency
-- counts
-- flags
-- model id
-
-❌ No medical text stored  
-❌ No PHI stored
+(or toggle dev-mode for testing)
 
 ---
 
-## 🌐 Live Example (if deployed)
+### 2️⃣ Backend Validation Guard
+Empty / invalid requests are rejected
 
-Demo UI:
-```
-https://your-service-url/demo
-```
+---
 
-API Docs (Swagger):
-```
-https://your-service-url/docs
-```
+### 3️⃣ Safety Classifier
+Blocks content like:
+
+• diagnosis  
+• medication advice  
+• urgent warnings  
+• prescriptive instructions  
+
+---
+
+### 4️⃣ Prompt Safety Rules
+The AI is constrained to:
+
+✔ educational language  
+✔ neutral tone  
+✔ no instructions  
+✔ no clinical judgement  
+
+---
+
+### 5️⃣ Logging Safety
+MLflow stores **only metadata** — never medical text.
+
+---
+
+## 🧪 Current Version
+
+### Version: `v0.2 (Chat Upgrade Release)`
+
+### New features
+✨ Chat UI (conversation flow)  
+✨ Multi-turn context memory  
+✨ Safe prompt controls  
+✨ UI polish  
+✨ Local + cloud support  
+✨ Docker deploy ready  
+
+---
+
+## 🌐 Live Deployment (Render)
+
+### Demo UI
+https://patient-qa-agent-1.onrender.com/demo
+
+### API Docs (Swagger)
+https://patient-qa-agent-1.onrender.com/docs
+
+### Health Check
+https://patient-qa-agent-1.onrender.com/health
 
 ---
 
 ## 🛠 Tech Stack
 
-| Layer | Tool |
-|------|-----|
-| Backend | FastAPI |
-| Server | Uvicorn |
-| Model | Hugging Face Router |
-| NLP | spaCy |
-| Logging | MLflow |
-| Runtime | Python 3.11 |
-| Container | Docker |
-| Hosting | Render |
+- **Python 3.11**
+- **FastAPI**
+- **Uvicorn**
+- **Hugging Face Inference API**
+- **spaCy NLP**
+- **MLflow (local file backend)**
+- **Docker**
+- **Render Cloud Hosting**
 
 ---
 
 ## 🔐 Environment Variables
 
-Create `.env`
+Create a `.env` file:
 
-```
-HUGGINGFACE_API_TOKEN=hf_xxxxxxxxx
+HUGGINGFACE_API_TOKEN=hf_xxxxxxxxxxxxxxxxx
 MLFLOW_TRACKING_URI=file:/app/mlruns
 MLFLOW_EXPERIMENT_NAME=patient-qa-agent
-```
+
 
 ---
 
-## ▶️ Run Local
+## 📦 Python Dependencies
+fastapi==0.115.5
+uvicorn[standard]==0.32.0
+pydantic==2.10.2
+python-dotenv==1.0.1
+requests==2.32.3
+httpx==0.27.2
+spacy==3.8.2
+openai==1.57.3
+mlflow==3.7.0
 
-```
+(The exact pinned versions are in `requirements.txt`.)
+
+---
+
+## ▶️ Local Development
+
+### 1️⃣ Create venv
+
+python -m venv .venv
+source .venv/bin/activate
+
+
+### 2️⃣ Install deps
 pip install -r requirements.txt
+python -m spacy download en_core_web_sm
+
+### 3️⃣ Run API
+
 uvicorn app.main:app --reload
-```
+
+Visit:
+http://127.0.0.1:8000/demo
+
+
+---
+
+## 🐳 Docker (Recommended)
+
+### Build
+docker build -t patient-qa-agent:latest 
+
+### Run
+docker run --rm
+-e HUGGINGFACE_API_TOKEN=YOUR_TOKEN
+-p 8000:8000
+patient-qa-agent:lates
+
 
 Open:
-
-```
-http://127.0.0.1:8000/demo
-```
+http://localhost:8000/demo
 
 ---
 
-## 🐳 Docker
+## 🚀 Deploy to Render
 
-```
-docker build -t patient-qa-agent .
-docker run -p 8000:8000 --env-file .env patient-qa-agent
-```
+Service type → **Web Service**  
+Runtime → **Docker**  
+Start command auto-handled by Dockerfile  
 
----
+Environment variables must include:
 
-## 📡 API Example
-
-POST `/ask`
-
-```json
-{
-  "medical_history": "Diagnosed with type 2 diabetes last year.",
-  "diagnoses": ["Type 2 Diabetes"],
-  "symptoms": ["fatigue", "increased thirst"],
-  "question": "Why do I feel tired?",
-  "messages": []
-}
-```
-
-Response includes disclaimer.
 
 ---
 
-## 📘 Disclaimer
+## 🔎 Logging (Safe)
 
-> This is for educational purposes only and not medical advice.
+MLflow **does NOT store medical text**
+
+It only logs:
+
+✔ latency  
+✔ counts of fields  
+✔ model version  
+✔ block status  
+
+Stored locally in container at:
+
 
 ---
 
-## 🔮 Future Work
+## ⚖️ Legal & Ethics Notice
 
-- Conversation history persistence
-- Sidebar chat list
-- Better UI polish
-- Extended NLP
+This project is:
+
+❌ NOT medical software  
+❌ NOT certified  
+❌ NOT treatment guidance  
+
+Users must always consult a professional.
 
 ---
 
-## 📜 License
-Educational & learning use only.
+## 📌 Future Roadmap
+
+- Conversation persistence
+- Patient note summarization
+- Multi-language UI
+- Role-based safety improvements
+
+---
+
+## ❤️ Credits
+
+Built for **learning AI safety in healthcare**.
+
+Special thanks to:
+- Hugging Face community
+- FastAPI ecosystem
+
+---
+
+## 📄 License
+
+MIT — educational use encouraged.
+
+---
