@@ -149,7 +149,9 @@ The project is currently hosted online.
 Create a `.env` file:
 
 HUGGINGFACE_API_TOKEN=hf_xxxxxxxxxxxxxxxxx
+
 MLFLOW_TRACKING_URI=file:/app/mlruns
+
 MLFLOW_EXPERIMENT_NAME=patient-qa-agent
 
 
@@ -269,6 +271,6 @@ Special thanks to:
 
 ## 📄 License
 
-MIT — educational use encouraged.
+
 
 ---
